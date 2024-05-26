@@ -2,9 +2,11 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs";
     cl-nix-lite.url = "github:hraban/cl-nix-lite";
+    flake-utils.url = "github:numtide/flake-utils";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 
-  outputs = { self, nixpkgs, cl-nix-lite, flake-utils }:
+  outputs = { self, nixpkgs, cl-nix-lite, flake-utils, treefmt-nix }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
@@ -13,6 +15,7 @@
         overlays = [
           cl-nix-lite.overlays.default
         ];
+        treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
         lib = pkgs.lib;
         name = "Lisp-In-Lisp";
         lispSystem = "lil";
@@ -36,6 +39,11 @@
         };
       in
         {
+          formatter = treefmtEval.config.build.wrapper;
+          checks = {
+            formatting = treefmtEval.config.build.check self;
+          };
+
           packages = {
             inherit sbcl clisp ecl;
             default = sbcl;
